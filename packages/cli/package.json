@@ -48,6 +48,7 @@
     "@platformatic/metaconfig": "workspace:*",
     "@platformatic/service": "workspace:*",
     "@platformatic/client-cli": "workspace:*",
+    "@platformatic/deploy-client": "^0.0.2",
     "colorette": "^2.0.19",
     "commist": "^3.2.0",
     "create-platformatic": "workspace:*",
