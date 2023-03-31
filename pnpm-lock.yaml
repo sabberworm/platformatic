@@ -44,7 +44,7 @@ importers:
       '@platformatic/authenticate': workspace:*
       '@platformatic/client-cli': workspace:*
       '@platformatic/db': workspace:*
-      '@platformatic/deploy-client': ^0.0.2
+      '@platformatic/deploy-client': platformatic/deploy-client#main
       '@platformatic/metaconfig': workspace:*
       '@platformatic/service': workspace:*
       c8: ^7.13.0
@@ -54,6 +54,7 @@ importers:
       desm: ^1.3.0
       execa: ^7.0.0
       help-me: ^4.2.0
+      inquirer: ^9.1.4
       license-checker: ^25.0.1
       minimist: ^1.2.8
       mkdirp: ^2.1.3
@@ -68,7 +69,7 @@ importers:
       '@platformatic/authenticate': link:../authenticate
       '@platformatic/client-cli': link:../client-cli
       '@platformatic/db': link:../db
-      '@platformatic/deploy-client': 0.0.2
+      '@platformatic/deploy-client': github.com/platformatic/deploy-client/3cb9f94c32b10a7a5b0b9a11cd09c2a24481b763
       '@platformatic/metaconfig': link:../metaconfig
       '@platformatic/service': link:../service
       colorette: 2.0.19
@@ -76,6 +77,7 @@ importers:
       create-platformatic: link:../create-platformatic
       desm: 1.3.0
       help-me: 4.2.0
+      inquirer: 9.1.5
       minimist: 1.2.8
       pino: 8.11.0
       pino-pretty: 10.0.0
@@ -3573,13 +3575,6 @@ packages:
       mkdirp: 1.0.4
       rimraf: 3.0.2
     optional: true
-
-  /@platformatic/deploy-client/0.0.2:
-    resolution: {integrity: sha512-YQeiaLjG7xZ/tyzTXV/eiWBzd5OYlJ6smeIPGO3flpqfx+4LC1uYE72Ty4dcUcFtUwdSUH5Gguzqu7ee6krJfA==}
-    dependencies:
-      tar: 6.1.13
-      undici: 5.21.0
-    dev: false
 
   /@platformatic/ui-components/0.1.74_o2gedffgdxkhe6tavdskyxbxxu:
     resolution: {integrity: sha512-VvKWGQ3Nr9KPS/WIBMAVAsNOR8uFuKXqSxCWxInXUPdMnt21MsH5eccXn5HzzMwz8x438PYK7l0KHDrCCvKChA==}
@@ -15431,3 +15426,12 @@ packages:
   /zwitch/1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
     dev: true
+
+  github.com/platformatic/deploy-client/3cb9f94c32b10a7a5b0b9a11cd09c2a24481b763:
+    resolution: {tarball: https://codeload.github.com/platformatic/deploy-client/tar.gz/3cb9f94c32b10a7a5b0b9a11cd09c2a24481b763}
+    name: '@platformatic/deploy-client'
+    version: 0.0.2
+    dependencies:
+      tar: 6.1.13
+      undici: 5.21.0
+    dev: false

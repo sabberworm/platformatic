@@ -1,85 +1,100 @@
 'use strict'
 
+import { isAbsolute, dirname, relative } from 'path'
+
 import pino from 'pino'
 import pretty from 'pino-pretty'
+import inquirer from 'inquirer'
 import parseArgs from 'minimist'
 import deployClient from '@platformatic/deploy-client'
 
-const DEPLOY_SERVICE_HOST = 'https://plt-development-deploy-service.fly.dev'
+export const DEPLOY_SERVICE_HOST = 'https://plt-development-deploy-service.fly.dev'
 
-const PLATFORMATIC_VARIABLES = ['PORT', 'DATABASE_URL']
-const PLATFORMATIC_SECRETS = []
+const WORKSPACE_TYPES = ['static', 'dynamic']
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const logger = pino(pretty({
   translateTime: 'SYS:HH:MM:ss',
   ignore: 'hostname,pid'
 }))
 
-function getEnvVariables (variablesNames) {
-  const upperCasedVariablesNames = []
-  for (const variableName of variablesNames) {
-    upperCasedVariablesNames.push(variableName.toUpperCase().trim())
-  }
-
-  const userEnvVars = {}
-  for (const key in process.env) {
-    const upperCaseKey = key.toUpperCase().trim()
-    if (
-      PLATFORMATIC_VARIABLES.includes(upperCaseKey) ||
-      upperCasedVariablesNames.includes(upperCaseKey) ||
-      upperCaseKey.startsWith('PLT_')
-    ) {
-      userEnvVars[upperCaseKey] = process.env[key]
-    }
-  }
-  return userEnvVars
-}
-
-function getSecrets (secretsNames) {
-  const upperCasedSecretsNames = []
-  for (const secretName of secretsNames) {
-    upperCasedSecretsNames.push(secretName.toUpperCase().trim())
-  }
-
-  const secrets = {}
-  for (const key in process.env) {
-    const upperCaseKey = key.toUpperCase().trim()
-    if (
-      PLATFORMATIC_SECRETS.includes(upperCaseKey) ||
-      upperCasedSecretsNames.includes(upperCaseKey)
-    ) {
-      secrets[upperCaseKey] = process.env[key]
-    }
-  }
-  return secrets
-}
-
 export async function deploy (argv) {
   const args = parseArgs(argv, {
     alias: {
-      config: 'c'
+      config: 'c',
+      type: 't',
+      env: 'e',
+      secrets: 's'
     },
-    string: ['workspace-id', 'workspace-key']
+    string: ['type', 'workspace-id', 'workspace-key', 'label']
   })
 
-  const workspaceId = args['workspace-id'] || process.env.PLATFORMATIC_WORKSPACE_ID
-  const workspaceKey = args['workspace-key'] || process.env.PLATFORMATIC_WORKSPACE_KEY
+  let workspaceType = args.type
+  if (!workspaceType) {
+    const answer = await inquirer.prompt({
+      type: 'list',
+      name: 'workspaceType',
+      message: 'Select workspace type:',
+      choices: WORKSPACE_TYPES
+    })
+    workspaceType = answer.workspaceType
+  }
 
-  const pathToConfig = args.config
+  if (!WORKSPACE_TYPES.includes(workspaceType)) {
+    logger.error(
+      `Invalid workspace type provided: "${workspaceType}". ` +
+      `Type must be one of: ${WORKSPACE_TYPES.join(', ')}.`
+    )
+    process.exit(1)
+  }
+
+  let workspaceId = args['workspace-id']
+  if (!workspaceId) {
+    const answer = await inquirer.prompt({
+      type: 'input',
+      name: 'workspaceId',
+      message: 'Enter workspace id:'
+    })
+    workspaceId = answer.workspaceId
+  }
+
+  if (!UUID_REGEX.test(workspaceId)) {
+    logger.error('Invalid workspace id provided. Workspace id must be a valid uuid.')
+    process.exit(1)
+  }
+
+  let workspaceKey = args['workspace-key']
+  if (!workspaceKey) {
+    const answer = await inquirer.prompt({
+      type: 'password',
+      name: 'workspaceKey',
+      message: 'Enter workspace key:',
+      mask: '*'
+    })
+    workspaceKey = answer.workspaceKey
+  }
+
+  let label = args.label
+  if (workspaceType === 'dynamic' && !label) {
+    const answer = await inquirer.prompt({
+      type: 'input',
+      name: 'label',
+      message: 'Enter deploy label:',
+      default: 'cli:deploy-1'
+    })
+    label = answer.label
+  }
+
+  let pathToConfig = args.config
+  let pathToProject = process.cwd()
+
+  if (pathToConfig && isAbsolute(pathToConfig)) {
+    pathToProject = dirname(pathToConfig)
+    pathToConfig = relative(pathToProject, pathToConfig)
+  }
+
   const pathToEnvFile = args.env || './.env'
-  const pathToProject = process.cwd()
-
-  logger.info('Getting environment secrets')
-  const secretsParam = args.secrets || ''
-  const secretsNames = secretsParam.split(',')
-  const secrets = getSecrets(secretsNames)
-
-  logger.info('Getting environment variables')
-  const envVariablesParam = args.variables || ''
-  const envVariablesNames = envVariablesParam.split(',')
-  const envVariables = getEnvVariables(envVariablesNames)
-
-  const label = args.label || 'cli:123'
+  const pathToSecretsFile = args.secrets || './.secrets.env'
   const deployServiceHost = DEPLOY_SERVICE_HOST
 
   const entryPointUrl = await deployClient.deploy({
@@ -89,8 +104,9 @@ export async function deploy (argv) {
     pathToProject,
     pathToConfig,
     pathToEnvFile,
-    secrets,
-    variables: envVariables,
+    pathToSecretsFile,
+    secrets: {},
+    variables: {},
     label,
     logger
   })
